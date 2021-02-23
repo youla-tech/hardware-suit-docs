@@ -1,0 +1,44 @@
+variables:
+  GITLAB_PAGES_SERVER_DIR: '/usr/local/nginx1159/html/gitlab/shared/pages'
+stages:
+  - setup
+  - build
+  - deploy
+
+cache:
+  paths:
+    - dist/
+
+安装依赖:
+  stage: setup
+  script:
+    - npm install --registry=https://registry.npm.taobao.org/
+  when: manual
+  tags:
+    - 31-build-shell
+
+项目构建:
+  stage: build
+  script:
+    - npm run docs:build
+  when: manual
+  only:
+    - master
+    - develop
+    - /^beta\/.*$/
+    - /^release\/.*$/
+  tags:
+    - 31-build-shell
+
+发布文档:
+  stage: deploy
+  script:
+    - mkdir -p $GITLAB_PAGES_SERVER_DIR/$CI_PROJECT_NAME
+    - rm -rf $GITLAB_PAGES_SERVER_DIR/$CI_PROJECT_NAME/*
+    - cp -r dist/* $GITLAB_PAGES_SERVER_DIR/$CI_PROJECT_NAME
+    - echo SERVER_PATH = https://aliiot.on-bright.com:8090/$CI_PROJECT_NAME
+  # when: manual
+  after_script:
+    # - rm -rf node_modules
+  tags:
+    - 31-build-shell
